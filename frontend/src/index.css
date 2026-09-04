@@ -1438,29 +1438,175 @@ body {
 }
 
 /* ==========================================================================
-   PRINT STYLES FOR CLEAN PDF EXPORT
+   PRINT STYLES FOR CLEAN PDF / PRINT EXPORT
+   Prints strictly the official FMCSA Daily Log Slip without UI chrome
    ========================================================================== */
 @media print {
-  body {
+  @page {
+    size: letter portrait;
+    margin: 0.35in 0.4in;
+  }
+
+  html, body {
     background: #ffffff !important;
     color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 11px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
-  .no-print {
+
+  /* Completely remove all application chrome and interactive UI */
+  .no-print,
+  .app-header,
+  .app-footer,
+  .presets-banner,
+  .trip-form-card,
+  .metrics-grid,
+  .map-and-timeline-grid,
+  .eld-logs-section-header,
+  .eld-toolbar,
+  .day-selector-tabs {
     display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
   }
-  .app-shell, .main-content-layout {
+
+  /* Full-width seamless containers */
+  .app-shell,
+  .main-content-layout,
+  .eld-logs-section,
+  .active-sheet-display,
+  .eld-sheet-container {
+    display: block !important;
     padding: 0 !important;
     margin: 0 !important;
+    width: 100% !important;
     max-width: 100% !important;
     background: #ffffff !important;
-  }
-  .trip-form-card, .metrics-grid, .map-and-timeline-grid, .presets-banner {
-    display: none !important;
-  }
-  .fmcsa-paper-sheet {
     box-shadow: none !important;
     border: none !important;
-    padding: 0 !important;
-    page-break-after: always;
+  }
+
+  /* Clean Official Document Paper Slip */
+  .fmcsa-paper-sheet {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 12px 16px !important;
+    background: #ffffff !important;
+    border: 2px solid #0f172a !important;
+    border-radius: 4px !important;
+    box-shadow: none !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Compact header and metadata in print */
+  .sheet-header {
+    margin-bottom: 0.45rem !important;
+    padding-bottom: 0.35rem !important;
+    border-bottom: 2px solid #0f172a !important;
+  }
+
+  .fmcsa-title {
+    font-size: 1.25rem !important;
+  }
+
+  .fmcsa-subtitle {
+    font-size: 0.72rem !important;
+  }
+
+  .fmcsa-date-box, .fmcsa-miles-box {
+    padding: 0.2rem 0.5rem !important;
+    min-width: 110px !important;
+  }
+
+  .sheet-meta-grid {
+    gap: 0.25rem 1.25rem !important;
+    margin-bottom: 0.45rem !important;
+    padding-bottom: 0.35rem !important;
+  }
+
+  .meta-field {
+    font-size: 0.72rem !important;
+    padding-bottom: 0.12rem !important;
+  }
+
+  .grid-canvas-container {
+    margin-bottom: 0.45rem !important;
+  }
+
+  /* Remarks Timeline in print */
+  .remarks-axis-wrapper {
+    height: 48px !important;
+    margin: 0.3rem 0 !important;
+  }
+
+  .pin-direction-up {
+    bottom: 23px !important;
+  }
+
+  .pin-direction-down {
+    top: 23px !important;
+  }
+
+  .remarks-axis-line {
+    top: 24px !important;
+  }
+
+  /* Remarks Table in print */
+  .remarks-table-container {
+    margin: 0.3rem 0 0.45rem 0 !important;
+  }
+
+  .remarks-data-table {
+    font-size: 0.72rem !important;
+  }
+
+  .remarks-data-table th,
+  .remarks-data-table td {
+    padding: 0.22rem 0.45rem !important;
+  }
+
+  .shipping-info-row {
+    padding: 0.3rem 0.5rem !important;
+    margin-top: 0.3rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* 70-Hr Recap Table - strictly keep intact without splitting */
+  .sheet-recap-table {
+    margin-top: 0.45rem !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .recap-title {
+    font-size: 0.72rem !important;
+    padding: 0.22rem 0.45rem !important;
+  }
+
+  .recap-cell {
+    padding: 0.22rem 0.45rem !important;
+  }
+
+  .rc-label {
+    font-size: 0.65rem !important;
+  }
+
+  .rc-val {
+    font-size: 0.82rem !important;
+  }
+
+  .recap-footer-note {
+    font-size: 0.64rem !important;
+    padding: 0.18rem 0.45rem !important;
   }
 }
+

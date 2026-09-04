@@ -88,7 +88,7 @@ export default function App() {
   return (
     <div className="app-shell">
       {/* Top Cockpit Header */}
-      <header className="app-header">
+      <header className="app-header no-print">
         <div className="header-brand">
           <div className="logo-icon-wrap">
             <Truck size={24} />
@@ -98,6 +98,7 @@ export default function App() {
             <p className="brand-subtitle">FMCSA 49 CFR Part 395 Property-Carrying Compliance & Multi-Day Log Generator</p>
           </div>
         </div>
+
 
         <div className="header-status-group">
           <div className="badge-compliance">
@@ -268,7 +269,7 @@ export default function App() {
         {/* DAILY LOG SHEETS (RODS) SECTION */}
         {tripData && tripData.daily_logs && tripData.daily_logs.length > 0 && (
           <section className="eld-logs-section">
-            <div className="eld-logs-section-header">
+            <div className="eld-logs-section-header no-print">
               <div className="section-title-wrap">
                 <FileText className="text-blue-400" size={24} />
                 <div>
