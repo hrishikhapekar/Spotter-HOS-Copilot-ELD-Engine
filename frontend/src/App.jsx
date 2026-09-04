@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Truck, MapPin, Calendar, Clock, Navigation2, RefreshCw, Layers, CheckCircle2, ChevronRight, FileText, Info } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Truck, MapPin, Calendar, Clock, Navigation2, RefreshCw, Layers, CheckCircle2, ChevronRight, FileText, Info, Sun, Moon } from 'lucide-react';
 import { planTrip, fetchPresets } from './services/api';
 import RouteMap from './components/RouteMap';
 import TripTimeline from './components/TripTimeline';
 import MetricsOverview from './components/MetricsOverview';
 import EldLogSheet from './components/EldLogSheet';
 import LocationAutocomplete from './components/LocationAutocomplete';
+import PixelBlast from './components/PixelBlast';
 
 export default function App() {
   const [currentLocation, setCurrentLocation] = useState('Chicago, IL');
@@ -21,15 +22,32 @@ export default function App() {
   const [presets, setPresets] = useState([]);
   const [engineSource, setEngineSource] = useState('django_backend');
 
+  // Theme State: 'light' or 'dark'
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('hos_theme') || 'light';
+  });
+
+  const resultsRef = useRef(null);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('hos_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   useEffect(() => {
     // Load presets and run initial plan
     fetchPresets().then(data => {
       setPresets(data);
     });
-    handlePlanTrip();
+
+    handlePlanTrip(null, false);
   }, []);
 
-  const handlePlanTrip = async (e) => {
+  const handlePlanTrip = async (e, shouldScroll = true) => {
     if (e) e.preventDefault();
     setLoading(true);
     setError(null);
@@ -50,6 +68,12 @@ export default function App() {
         setTripData(result);
         setActiveDayIndex(0);
         setEngineSource(result.source || 'django_backend');
+
+        if (shouldScroll) {
+          setTimeout(() => {
+            resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 200);
+        }
       }
     } catch (err) {
       setError(err.message || 'An unexpected error occurred.');
@@ -64,7 +88,7 @@ export default function App() {
     setDropoffLocation(p.dropoff_location);
     setCurrentCycleUsed(p.current_cycle_used);
 
-    // Trigger calculation with new preset
+    // Trigger calculation with new preset and scroll to map
     setLoading(true);
     planTrip({
       current_location: p.current_location,
@@ -80,15 +104,37 @@ export default function App() {
         setTripData(result);
         setActiveDayIndex(0);
         setEngineSource(result.source || 'django_backend');
+
+        setTimeout(() => {
+          resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 150);
       }
       setLoading(false);
     });
   };
 
+
   return (
     <div className="app-shell">
+      {/* Interactive PixelBlast Ambient Background */}
+      <PixelBlast
+        className="app-pixel-blast-bg"
+        variant="circle"
+        pixelSize={6}
+        color={theme === 'dark' ? '#38bdf8' : '#0f172a'}
+        patternScale={2.8}
+        patternDensity={1.15}
+        liquid={true}
+        liquidStrength={0.1}
+        enableRipples={true}
+        speed={0.35}
+        edgeFade={0.15}
+        transparent={true}
+      />
+
       {/* Top Cockpit Header */}
       <header className="app-header no-print">
+
         <div className="header-brand">
           <div className="logo-icon-wrap">
             <Truck size={24} />
@@ -101,6 +147,27 @@ export default function App() {
 
 
         <div className="header-status-group">
+          {/* Theme Toggle Button */}
+          <button
+            type="button"
+            className="btn-theme-toggle"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            aria-label="Toggle Theme"
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun size={15} style={{ color: '#f59e0b' }} />
+                <span>Light</span>
+              </>
+            ) : (
+              <>
+                <Moon size={15} style={{ color: '#6366f1' }} />
+                <span>Dark</span>
+              </>
+            )}
+          </button>
+
           <div className="badge-compliance">
             <CheckCircle2 size={15} style={{ color: 'var(--accent-success)' }} />
             <span>70hr / 8-Day Rule Active</span>
@@ -111,6 +178,7 @@ export default function App() {
           </div>
         </div>
       </header>
+
 
 
       {/* Main App Body */}
@@ -136,8 +204,9 @@ export default function App() {
 
         {/* Input Configuration & Top Controls */}
         <section className="trip-form-card">
-          <form onSubmit={handlePlanTrip} className="trip-form-grid">
+          <form onSubmit={e => handlePlanTrip(e, true)} className="trip-form-grid">
             <LocationAutocomplete
+
               id="current_loc"
               label="Current Location"
               icon={MapPin}
@@ -169,6 +238,22 @@ export default function App() {
               onChange={setDropoffLocation}
               required
             />
+
+            <div className="input-group">
+              <label htmlFor="start_time" className="input-label">
+                <Calendar size={15} style={{ color: 'var(--accent-primary)' }} />
+                <span>Trip Start Date & Time</span>
+              </label>
+              <input
+                id="start_time"
+                type="datetime-local"
+                className="text-input"
+                value={startTime}
+                onChange={e => setStartTime(e.target.value)}
+                required
+              />
+            </div>
+
 
 
             <div className="input-group">
@@ -253,8 +338,9 @@ export default function App() {
 
         {/* Map & Timeline Split Section */}
         {tripData && (
-          <section className="map-and-timeline-grid">
+          <section className="map-and-timeline-grid" ref={resultsRef}>
             <RouteMap
+
               locations={tripData.locations}
               stops={tripData.stops}
               routeGeometry={tripData.route_geometry}

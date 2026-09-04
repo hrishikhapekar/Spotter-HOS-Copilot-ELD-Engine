@@ -1,0 +1,39 @@
+.pixel-blast-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.pixel-blast-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Background canvas fixed strictly behind all UI surfaces */
+.app-pixel-blast-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1 !important; /* Always in the deep background behind all cards */
+  pointer-events: none;
+  opacity: 0.65;
+  transition: opacity 0.4s ease;
+}
+
+[data-theme='dark'] .app-pixel-blast-bg {
+  opacity: 0.55;
+}
+
+@media print {
+  .app-pixel-blast-bg,
+  .pixel-blast-container {
+    display: none !important;
+  }
+}
+

@@ -41,15 +41,19 @@ export default function EldLogSheet({ log, totalDays }) {
   ];
   const GRID_BOTTOM = ROW_Y[3] + ROW_HEIGHT / 2;
 
-  // Convert hour (0.0 - 24.0) to X pixel coordinate
-  const hourToX = (hour) => GRID_LEFT + hour * HOUR_WIDTH;
+  // Convert hour (0.0 - 24.0) to X pixel coordinate with strict clamping
+  const hourToX = (hour) => {
+    const clamped = Math.max(0, Math.min(24, parseFloat(hour) || 0));
+    return GRID_LEFT + clamped * HOUR_WIDTH;
+  };
 
   // Convert status line (1 to 4) to center Y pixel coordinate
-  const lineToY = (lineNum) => ROW_Y[lineNum - 1];
+  const lineToY = (lineNum) => ROW_Y[Math.max(0, Math.min(3, (lineNum || 1) - 1))];
 
   // Build stepped polyline points
   const polylinePoints = [];
   if (intervals && intervals.length > 0) {
+    let lastY = null;
     for (let i = 0; i < intervals.length; i++) {
       const it = intervals[i];
       const startX = hourToX(it.start_hour);
@@ -59,10 +63,14 @@ export default function EldLogSheet({ log, totalDays }) {
       if (i === 0) {
         polylinePoints.push(`${startX},${y}`);
       } else {
-        // Vertical step from previous line to this line
+        // Strict vertical step from previous line to this line at startX
+        if (lastY !== null && lastY !== y) {
+          polylinePoints.push(`${startX},${lastY}`);
+        }
         polylinePoints.push(`${startX},${y}`);
       }
       polylinePoints.push(`${endX},${y}`);
+      lastY = y;
     }
   }
 
@@ -147,7 +155,7 @@ export default function EldLogSheet({ log, totalDays }) {
             xmlns="http://www.w3.org/2000/svg"
           >
             {/* Background */}
-            <rect x="0" y="0" width="980" height="180" fill="#ffffff" />
+            <rect x="0" y="0" width="980" height="180" className="svg-canvas-bg" />
 
             {/* Status Row Headers */}
             <text x="12" y="58" className="grid-label">1. Off Duty</text>
@@ -166,7 +174,7 @@ export default function EldLogSheet({ log, totalDays }) {
               width={GRID_WIDTH}
               height={ROW_HEIGHT * 4}
               fill="none"
-              stroke="#0f172a"
+              className="svg-grid-outer"
               strokeWidth="1.5"
             />
 
@@ -178,7 +186,7 @@ export default function EldLogSheet({ log, totalDays }) {
                 y1={40 + (idx + 1) * ROW_HEIGHT}
                 x2={GRID_RIGHT}
                 y2={40 + (idx + 1) * ROW_HEIGHT}
-                stroke="#cbd5e1"
+                className="svg-row-divider"
                 strokeWidth="1"
               />
             ))}
@@ -212,7 +220,7 @@ export default function EldLogSheet({ log, totalDays }) {
                     y1="40"
                     x2={x}
                     y2={40 + ROW_HEIGHT * 4}
-                    stroke="#475569"
+                    className="svg-hour-major"
                     strokeWidth={h === 0 || h === 12 || h === 24 ? "1.5" : "1"}
                   />
 
@@ -228,7 +236,7 @@ export default function EldLogSheet({ log, totalDays }) {
                             y1={rowY - (quarter === 2 ? 8 : 4)}
                             x2={qX}
                             y2={rowY + (quarter === 2 ? 8 : 4)}
-                            stroke="#94a3b8"
+                            className="svg-hour-minor"
                             strokeWidth="0.8"
                             strokeDasharray={quarter === 2 ? "none" : "1,1"}
                           />
@@ -246,8 +254,7 @@ export default function EldLogSheet({ log, totalDays }) {
               y="40"
               width="70"
               height={ROW_HEIGHT * 4}
-              fill="#f8fafc"
-              stroke="#0f172a"
+              className="svg-totals-box"
               strokeWidth="1.5"
             />
             {ROW_Y.map((_, idx) => (
@@ -257,7 +264,7 @@ export default function EldLogSheet({ log, totalDays }) {
                 y1={40 + (idx + 1) * ROW_HEIGHT}
                 x2="950"
                 y2={40 + (idx + 1) * ROW_HEIGHT}
-                stroke="#94a3b8"
+                className="svg-totals-div"
                 strokeWidth="1"
               />
             ))}
@@ -277,7 +284,7 @@ export default function EldLogSheet({ log, totalDays }) {
               <polyline
                 points={polylinePoints.join(" ")}
                 fill="none"
-                stroke="#1d4ed8"
+                className="duty-step-line"
                 strokeWidth="3.2"
                 strokeLinecap="round"
                 strokeLinejoin="miter"
@@ -289,42 +296,44 @@ export default function EldLogSheet({ log, totalDays }) {
         {/* Remarks Section */}
         <div className="sheet-remarks-section">
           <div className="remarks-title-bar">
-            <span className="font-bold">REMARKS</span>
+            <span className="remarks-title-heading">REMARKS</span>
             <span className="remarks-sub">
               Enter name of place you reported, where released from work, and when/where each change of duty occurred (§ 395.8(h)).
             </span>
           </div>
 
-          {/* Alternating 24-Hour Remarks Indicator Axis (Prevents text collision) */}
-          <div className="remarks-axis-wrapper">
-            <div className="remarks-axis-line"></div>
-            {remarks && remarks.length > 0 && remarks.map((rm, idx) => {
-              const posPercent = Math.min(96, Math.max(3, (rm.hour / 24) * 100));
-              const isTop = idx % 2 === 0;
+          {/* Alternating 24-Hour Remarks Indicator Axis in scrollable container to prevent mobile overflow */}
+          <div className="remarks-axis-scroll-container">
+            <div className="remarks-axis-wrapper">
+              <div className="remarks-axis-line"></div>
+              {remarks && remarks.length > 0 && remarks.map((rm, idx) => {
+                const posPercent = Math.min(94, Math.max(6, (rm.hour / 24) * 100));
+                const isTop = idx % 2 === 0;
 
-              return (
-                <div
-                  key={`pin-${idx}`}
-                  className={`remarks-axis-pin ${isTop ? 'pin-direction-up' : 'pin-direction-down'}`}
-                  style={{ left: `${posPercent}%` }}
-                  title={`${rm.time} - ${rm.location} - ${rm.text}`}
-                >
-                  {isTop ? (
-                    <>
-                      <span className="pin-time-label pin-label-top">{rm.time}</span>
-                      <div className="pin-stem"></div>
-                      <div className="pin-dot"></div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="pin-dot"></div>
-                      <div className="pin-stem"></div>
-                      <span className="pin-time-label pin-label-bottom">{rm.time}</span>
-                    </>
-                  )}
-                </div>
-              );
-            })}
+                return (
+                  <div
+                    key={`pin-${idx}`}
+                    className={`remarks-axis-pin ${isTop ? 'pin-direction-up' : 'pin-direction-down'}`}
+                    style={{ left: `${posPercent}%` }}
+                    title={`${rm.time} - ${rm.location} - ${rm.text}`}
+                  >
+                    {isTop ? (
+                      <>
+                        <span className="pin-time-label pin-label-top">{rm.time}</span>
+                        <div className="pin-stem"></div>
+                        <div className="pin-dot"></div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="pin-dot"></div>
+                        <div className="pin-stem"></div>
+                        <span className="pin-time-label pin-label-bottom">{rm.time}</span>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Structured Chronological Remarks Table (Eliminates all jumbling) */}
